@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de Carte de Structures</title>
+    <title>Bloxd.io Structure Finder</title>
     <style>
         * {
             margin: 0;
@@ -13,92 +13,118 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+            height: 100vh;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .seed-input-container {
-            margin: 20px 0;
+            background: #16213e;
+            padding: 15px 20px;
+            border-bottom: 2px solid #0f3460;
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            align-items: center;
+            gap: 15px;
             flex-wrap: wrap;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
         }
 
         .seed-input {
-            padding: 12px 20px;
-            font-size: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 10px;
-            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            font-size: 14px;
+            border: 2px solid #0f3460;
+            border-radius: 6px;
+            background: #1a1a2e;
             color: white;
-            width: 300px;
-            transition: all 0.3s;
-        }
-
-        .seed-input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
-
-        .seed-input:focus {
-            outline: none;
-            background: rgba(255,255,255,0.2);
-            border-color: white;
+            width: 250px;
         }
 
         .generate-btn {
-            padding: 12px 30px;
-            font-size: 16px;
-            background: white;
-            color: #667eea;
+            padding: 8px 20px;
+            font-size: 14px;
+            background: #e94560;
+            color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.3s;
         }
 
         .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            background: #c23850;
         }
 
-        .map-container {
-            position: relative;
-            height: 600px;
-            background: #8fbc8f;
+        .coords-display {
+            margin-left: auto;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
             overflow: hidden;
-            cursor: grab;
-            touch-action: none;
-            background-image: 
-                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-            background-size: 50px 50px;
         }
 
-        .map-container:active {
+        .sidebar {
+            width: 250px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #e94560;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .filter-item:hover {
+            background: #1a1a2e;
+        }
+
+        .filter-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .map-view {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #0f3460;
+            cursor: grab;
+        }
+
+        .map-view:active {
             cursor: grabbing;
         }
 
@@ -106,147 +132,81 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform-origin: center;
+            transform-origin: 0 0;
+            will-change: transform;
         }
 
         .structure-marker {
             position: absolute;
-            width: 30px;
-            height: 30px;
+            width: 20px;
+            height: 20px;
             transform: translate(-50%, -50%);
             cursor: pointer;
-            transition: all 0.2s;
-            font-size: 24px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            transition: transform 0.1s;
         }
 
         .structure-marker:hover {
-            transform: translate(-50%, -50%) scale(1.4);
-            z-index: 100;
+            transform: translate(-50%, -50%) scale(1.5);
+            z-index: 10;
         }
 
         .tooltip {
-            position: absolute;
+            position: fixed;
             background: rgba(0,0,0,0.9);
             color: white;
-            padding: 12px 18px;
-            border-radius: 8px;
-            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
             pointer-events: none;
             z-index: 1000;
-            white-space: nowrap;
             display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-
-        .controls {
-            padding: 20px;
-            background: #f8f9fa;
-            border-top: 2px solid #e0e0e0;
+            white-space: pre-line;
         }
 
         .zoom-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            z-index: 10;
         }
 
         .zoom-btn {
-            padding: 10px 20px;
-            background: #667eea;
+            width: 40px;
+            height: 40px;
+            background: #16213e;
+            border: 2px solid #0f3460;
             color: white;
-            border: none;
-            border-radius: 8px;
+            font-size: 20px;
             cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            transition: all 0.3s;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .zoom-btn:hover {
-            background: #764ba2;
-            transform: scale(1.05);
+            background: #1a1a2e;
         }
 
-        .zoom-level {
-            padding: 10px 20px;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-weight: bold;
-            color: #667eea;
-            min-width: 100px;
-            text-align: center;
-        }
-
-        .structure-filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
-        }
-
-        .filter-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            background: white;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid #e0e0e0;
-        }
-
-        .filter-item:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .filter-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #667eea;
-        }
-
-        .filter-item label {
-            cursor: pointer;
-            font-weight: 500;
-            flex: 1;
-            font-size: 14px;
-        }
-
-        .structure-icon {
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             font-size: 18px;
-        }
-
-        .stats {
-            margin-top: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-            color: #667eea;
+            color: #e94560;
         }
 
         @media (max-width: 768px) {
-            .map-container {
-                height: 400px;
-            }
-
-            .structure-filters {
-                grid-template-columns: 1fr;
-            }
-
-            h1 {
-                font-size: 1.8em;
+            .sidebar {
+                display: none;
             }
         }
     </style>
@@ -254,579 +214,509 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🗺️ Générateur de Carte de Structures</h1>
-            <div class="seed-input-container">
-                <input type="text" class="seed-input" id="seedInput" placeholder="Entrez une seed (ex: minecraft123)">
-                <button class="generate-btn" onclick="generateMap()">Générer la Carte</button>
-            </div>
+            <div class="logo">🗺️ Bloxd.io Finder</div>
+            <input type="text" class="seed-input" id="seedInput" placeholder="Seed...">
+            <button class="generate-btn" onclick="generateMap()">Generate</button>
+            <div class="coords-display" id="coordsDisplay">X: 0, Z: 0</div>
         </div>
 
-        <div class="map-container" id="mapContainer">
-            <div class="map-canvas" id="mapCanvas"></div>
-            <div class="tooltip" id="tooltip"></div>
-        </div>
-
-        <div class="controls">
-            <div class="zoom-controls">
-                <button class="zoom-btn" onclick="zoomOut()">-</button>
-                <div class="zoom-level" id="zoomLevel">100%</div>
-                <button class="zoom-btn" onclick="zoomIn()">+</button>
-                <button class="zoom-btn" onclick="resetView()">🎯 Centrer</button>
-            </div>
-
-            <div class="structure-filters" id="structureFilters"></div>
-
-            <div class="stats" id="stats">
-                Aucune carte générée
+        <div class="main-content">
+            <div class="sidebar" id="sidebar"></div>
+            
+            <div class="map-view" id="mapView">
+                <canvas id="mapCanvas"></canvas>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="zoomOut()">−</button>
+                    <button class="zoom-btn" onclick="resetView()">⌖</button>
+                </div>
+                <div class="loading" id="loading" style="display:none">Generating...</div>
+                <div class="tooltip" id="tooltip"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Structures extraites du code source
-        const TREE_TYPES = {
-            Maple: { id: 0, name: 'Érable', icon: '🍁' },
-            Pine: { id: 1, name: 'Pin', icon: '🌲' },
-            Plum: { id: 2, name: 'Prunier', icon: '🌸' },
-            Cedar: { id: 4, name: 'Cèdre', icon: '🌲' },
-            Aspen: { id: 5, name: 'Tremble', icon: '🍃' },
-            Jungle: { id: 6, name: 'Jungle', icon: '🌴' },
-            Palm: { id: 7, name: 'Palmier', icon: '🌴' },
-            AutumnMaple: { id: 8, name: 'Érable Automne', icon: '🍂' },
-            Pear: { id: 9, name: 'Poirier', icon: '🍐' },
-            Cherry: { id: 10, name: 'Cerisier', icon: '🌸' },
-            Spectral: { id: 11, name: 'Spectral', icon: '👻' },
-            Mango: { id: 12, name: 'Manguier', icon: '🥭' },
-            AutumnAspen: { id: 13, name: 'Tremble Automne', icon: '🍂' }
-        };
+        // Code extrait du fichier source
+        const F2 = .5 * (Math.sqrt(3) - 1);
+        const G2 = (3 - Math.sqrt(3)) / 6;
+        const grad3 = new Float32Array([1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1]);
 
-        const CAVE_TYPES = [
-            { id: 'spaghetti', name: 'Caverne Spaghetti', icon: '🕳️', count: 6 },
-            { id: 'pit', name: 'Fosse', icon: '🔥', count: 2 },
-            { id: 'ravine', name: 'Ravin', icon: '⛰️', count: 2 },
-            { id: 'sphere', name: 'Caverne Sphérique', icon: '⚪', count: 1 }
-        ];
-
-        const STRUCTURE_CONFIGS = [
-            ...Object.values(TREE_TYPES).map(tree => ({
-                id: `tree_${tree.id}`,
-                name: tree.name,
-                icon: tree.icon,
-                type: 'tree'
-            })),
-            ...CAVE_TYPES.map(cave => ({
-                id: cave.id,
-                name: cave.name,
-                icon: cave.icon,
-                type: 'cave'
-            }))
-        ];
-
-        let currentSeed = '';
-        let structures = [];
-        let zoom = 1;
-        let panX = 0;
-        let panY = 0;
-        let isDragging = false;
-        let lastX = 0;
-        let lastY = 0;
-        let activeFilters = new Set(STRUCTURE_CONFIGS.map(s => s.id));
-
-        // Implémentation du générateur Simplex Noise (simplifié)
         class SimplexNoise {
-            constructor(seed) {
-                this.seed = seed;
-                this.p = this.buildPermutationTable(seed);
+            constructor(seed = Math.random) {
+                const random = typeof seed === 'function' ? seed : this.createRandom(seed);
+                this.p = this.buildPermutationTable(random);
+                this.perm = new Uint8Array(512);
+                this.permMod12 = new Uint8Array(512);
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = this.p[i & 255];
+                    this.permMod12[i] = this.perm[i] % 12;
+                }
             }
 
-            buildPermutationTable(seed) {
-                const p = [];
+            createRandom(seed) {
+                let s = 0, t = 0, u = 0, v = 1;
+                const mash = (data) => {
+                    let n = 4022871197;
+                    for (let i = 0; i < data.length; i++) {
+                        n += data.charCodeAt(i);
+                        let h = 0.02519603282416938 * n;
+                        n = h >>> 0;
+                        h -= n;
+                        h *= n;
+                        n = h >>> 0;
+                        h -= n;
+                        n += h * 4294967296;
+                    }
+                    return (n >>> 0) * 2.3283064365386963e-10;
+                };
+                
+                seed = seed.toString();
+                s = mash(' ');
+                t = mash(' ');
+                u = mash(' ');
+                s -= mash(seed);
+                if (s < 0) s += 1;
+                t -= mash(seed);
+                if (t < 0) t += 1;
+                u -= mash(seed);
+                if (u < 0) u += 1;
+
+                return () => {
+                    const n = 2091639 * s + 2.3283064365386963e-10 * v;
+                    s = t;
+                    t = u;
+                    u = n - (v = n | 0);
+                    return u;
+                };
+            }
+
+            buildPermutationTable(random) {
+                const p = new Uint8Array(256);
                 for (let i = 0; i < 256; i++) p[i] = i;
-                
-                let n, q;
-                for (let i = 255; i > 0; i--) {
-                    seed = (seed * 9301 + 49297) % 233280;
-                    n = seed / 233280;
-                    q = Math.floor(n * (i + 1));
-                    [p[i], p[q]] = [p[q], p[i]];
+                for (let i = 0; i < 255; i++) {
+                    const r = i + ~~(random() * (256 - i));
+                    const aux = p[i];
+                    p[i] = p[r];
+                    p[r] = aux;
                 }
-                
-                return [...p, ...p];
+                return p;
             }
 
             noise2D(x, y) {
-                const X = Math.floor(x) & 255;
-                const Y = Math.floor(y) & 255;
+                const permMod12 = this.permMod12;
+                const perm = this.perm;
+                let n0, n1, n2;
                 
-                x -= Math.floor(x);
-                y -= Math.floor(y);
+                const s = (x + y) * F2;
+                const i = Math.floor(x + s);
+                const j = Math.floor(y + s);
+                const t = (i + j) * G2;
+                const X0 = i - t;
+                const Y0 = j - t;
+                const x0 = x - X0;
+                const y0 = y - Y0;
                 
-                const u = this.fade(x);
-                const v = this.fade(y);
+                let i1, j1;
+                if (x0 > y0) {
+                    i1 = 1;
+                    j1 = 0;
+                } else {
+                    i1 = 0;
+                    j1 = 1;
+                }
                 
-                const A = this.p[X] + Y;
-                const B = this.p[X + 1] + Y;
+                const x1 = x0 - i1 + G2;
+                const y1 = y0 - j1 + G2;
+                const x2 = x0 - 1.0 + 2.0 * G2;
+                const y2 = y0 - 1.0 + 2.0 * G2;
                 
-                return this.lerp(v,
-                    this.lerp(u, this.grad(this.p[A], x, y), this.grad(this.p[B], x - 1, y)),
-                    this.lerp(u, this.grad(this.p[A + 1], x, y - 1), this.grad(this.p[B + 1], x - 1, y - 1))
-                );
-            }
-
-            fade(t) {
-                return t * t * t * (t * (t * 6 - 15) + 10);
-            }
-
-            lerp(t, a, b) {
-                return a + t * (b - a);
-            }
-
-            grad(hash, x, y) {
-                const h = hash & 3;
-                return ((h & 1) === 0 ? x : -x) + ((h & 2) === 0 ? y : -y);
+                const ii = i & 255;
+                const jj = j & 255;
+                
+                let t0 = 0.5 - x0 * x0 - y0 * y0;
+                if (t0 < 0) {
+                    n0 = 0.0;
+                } else {
+                    const gi0 = permMod12[ii + perm[jj]] * 3;
+                    t0 *= t0;
+                    n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0);
+                }
+                
+                let t1 = 0.5 - x1 * x1 - y1 * y1;
+                if (t1 < 0) {
+                    n1 = 0.0;
+                } else {
+                    const gi1 = permMod12[ii + i1 + perm[jj + j1]] * 3;
+                    t1 *= t1;
+                    n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1);
+                }
+                
+                let t2 = 0.5 - x2 * x2 - y2 * y2;
+                if (t2 < 0) {
+                    n2 = 0.0;
+                } else {
+                    const gi2 = permMod12[ii + 1 + perm[jj + 1]] * 3;
+                    t2 *= t2;
+                    n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2);
+                }
+                
+                return 70.0 * (n0 + n1 + n2);
             }
         }
 
-        // Générateur pseudo-aléatoire
-        class SeededRandom {
-            constructor(seed) {
-                this.seed = this.hashString(seed);
-            }
+        // Configuration des structures
+        const STRUCTURES = {
+            trees: [
+                { id: 'maple', name: 'Maple', icon: '🍁', color: '#c94c4c' },
+                { id: 'pine', name: 'Pine', icon: '🌲', color: '#2d5016' },
+                { id: 'plum', name: 'Plum', icon: '🌸', color: '#ff69b4' },
+                { id: 'cedar', name: 'Cedar', icon: '🌲', color: '#654321' },
+                { id: 'aspen', name: 'Aspen', icon: '🍃', color: '#90ee90' },
+                { id: 'jungle', name: 'Jungle', icon: '🌴', color: '#228b22' },
+                { id: 'palm', name: 'Palm', icon: '🌴', color: '#daa520' }
+            ],
+            caves: [
+                { id: 'cave', name: 'Cave', icon: '🕳️', color: '#696969' },
+                { id: 'pit', name: 'Pit', icon: '🔥', color: '#ff4500' },
+                { id: 'ravine', name: 'Ravine', icon: '⛰️', color: '#8b4513' }
+            ]
+        };
 
-            hashString(str) {
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) {
-                    const char = str.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash;
-                }
-                return Math.abs(hash);
-            }
+        let canvas, ctx;
+        let zoom = 1;
+        let offsetX = 0, offsetY = 0;
+        let isDragging = false;
+        let lastX, lastY;
+        let structures = [];
+        let visibleStructures = new Set();
+        let currentSeed = '';
 
-            next() {
-                this.seed = (this.seed * 9301 + 49297) % 233280;
-                return this.seed / 233280;
-            }
-
-            nextInt(min, max) {
-                return Math.floor(this.next() * (max - min + 1)) + min;
-            }
-        }
-
-        // Générateur de points Poisson Disk (inspiré du code)
-        class PoissonDiskGenerator {
-            constructor(seed, minDist, width, height) {
-                this.rng = new SeededRandom(seed);
-                this.minDist = minDist;
-                this.width = width;
-                this.height = height;
-                this.cellSize = minDist / Math.sqrt(2);
-                this.grid = [];
-                this.active = [];
-                this.points = [];
-            }
-
-            generate() {
-                const cols = Math.ceil(this.width / this.cellSize);
-                const rows = Math.ceil(this.height / this.cellSize);
-                
-                for (let i = 0; i < cols * rows; i++) {
-                    this.grid[i] = undefined;
-                }
-
-                const x = this.width / 2;
-                const y = this.height / 2;
-                const pos = [x, y];
-                
-                const col = Math.floor(x / this.cellSize);
-                const row = Math.floor(y / this.cellSize);
-                this.grid[col + row * cols] = pos;
-                this.active.push(pos);
-                this.points.push(pos);
-
-                while (this.active.length > 0) {
-                    const randIndex = Math.floor(this.rng.next() * this.active.length);
-                    const pos = this.active[randIndex];
-                    let found = false;
-
-                    for (let n = 0; n < 30; n++) {
-                        const angle = this.rng.next() * Math.PI * 2;
-                        const r = this.minDist + this.rng.next() * this.minDist;
-                        const newX = pos[0] + Math.cos(angle) * r;
-                        const newY = pos[1] + Math.sin(angle) * r;
-
-                        if (newX >= 0 && newX < this.width && newY >= 0 && newY < this.height) {
-                            const newCol = Math.floor(newX / this.cellSize);
-                            const newRow = Math.floor(newY / this.cellSize);
-                            
-                            let ok = true;
-                            for (let i = -1; i <= 1; i++) {
-                                for (let j = -1; j <= 1; j++) {
-                                    const index = (newCol + i) + (newRow + j) * cols;
-                                    const neighbor = this.grid[index];
-                                    if (neighbor) {
-                                        const d = Math.hypot(newX - neighbor[0], newY - neighbor[1]);
-                                        if (d < this.minDist) {
-                                            ok = false;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (ok) {
-                                const newPos = [newX, newY];
-                                this.grid[newCol + newRow * cols] = newPos;
-                                this.active.push(newPos);
-                                this.points.push(newPos);
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!found) {
-                        this.active.splice(randIndex, 1);
-                    }
-                }
-
-                return this.points;
-            }
-        }
-
-        // Générer les structures avec l'algorithme du jeu
-        function generateStructures(seed) {
-            const generated = [];
-            const mapSize = 2000;
-            const rng = new SeededRandom(seed);
-            const noise = new SimplexNoise(seed);
-
-            // Générer les arbres avec Poisson Disk
-            for (const treeType of Object.values(TREE_TYPES)) {
-                const treeSeed = `${seed}_tree_${treeType.id}`;
-                const poisson = new PoissonDiskGenerator(treeSeed, 80, mapSize * 2, mapSize * 2);
-                const points = poisson.generate();
-
-                points.forEach((point, idx) => {
-                    const x = Math.floor(point[0] - mapSize);
-                    const z = Math.floor(point[1] - mapSize);
-                    
-                    // Utiliser le bruit pour varier les biomes
-                    const biomeNoise = noise.noise2D(x / 500, z / 500);
-                    
-                    if (Math.abs(biomeNoise) > 0.3 || idx % 3 !== 0) return; // Filtrer certains arbres
-
-                    generated.push({
-                        type: `tree_${treeType.id}`,
-                        name: treeType.name,
-                        icon: treeType.icon,
-                        x: x,
-                        z: z,
-                        id: `${treeType.name}_${x}_${z}`
-                    });
-                });
-            }
-
-            // Générer les cavernes (spaghetti caves)
-            const cavePoisson = new PoissonDiskGenerator(`${seed}_caves`, 200, mapSize * 2, mapSize * 2);
-            const cavePoints = cavePoisson.generate();
-
-            cavePoints.forEach((point, idx) => {
-                const x = Math.floor(point[0] - mapSize);
-                const z = Math.floor(point[1] - mapSize);
-                
-                const caveNoise = noise.noise2D(x / 300, z / 300);
-                if (Math.abs(caveNoise) < 0.1) {
-                    generated.push({
-                        type: 'spaghetti',
-                        name: 'Caverne Spaghetti',
-                        icon: '🕳️',
-                        x: x,
-                        z: z,
-                        id: `spaghetti_${x}_${z}`
-                    });
-                }
+        function init() {
+            canvas = document.getElementById('mapCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Initialize filters
+            initFilters();
+            
+            // Mouse events
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('mouseleave', () => {
+                document.getElementById('tooltip').style.display = 'none';
             });
+            canvas.addEventListener('wheel', onWheel, { passive: false });
+            
+            // Default seed
+            document.getElementById('seedInput').value = 'bloxd123';
+            generateMap();
+        }
 
-            // Générer les fosses (moins fréquentes)
-            for (let i = 0; i < 15; i++) {
-                const x = rng.nextInt(-mapSize, mapSize);
-                const z = rng.nextInt(-mapSize, mapSize);
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            render();
+        }
+
+        function initFilters() {
+            const sidebar = document.getElementById('sidebar');
+            
+            for (const [category, items] of Object.entries(STRUCTURES)) {
+                const section = document.createElement('div');
+                section.className = 'filter-section';
                 
-                generated.push({
-                    type: 'pit',
-                    name: 'Fosse',
-                    icon: '🔥',
-                    x: x,
-                    z: z,
-                    id: `pit_${x}_${z}`
-                });
-            }
-
-            // Générer les ravins
-            for (let i = 0; i < 10; i++) {
-                const x = rng.nextInt(-mapSize, mapSize);
-                const z = rng.nextInt(-mapSize, mapSize);
+                const title = document.createElement('div');
+                title.className = 'filter-title';
+                title.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                section.appendChild(title);
                 
-                generated.push({
-                    type: 'ravine',
-                    name: 'Ravin',
-                    icon: '⛰️',
-                    x: x,
-                    z: z,
-                    id: `ravine_${x}_${z}`
+                items.forEach(struct => {
+                    const item = document.createElement('div');
+                    item.className = 'filter-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
+                    checkbox.id = `filter_${struct.id}`;
+                    checkbox.onchange = () => {
+                        if (checkbox.checked) {
+                            visibleStructures.add(struct.id);
+                        } else {
+                            visibleStructures.delete(struct.id);
+                        }
+                        render();
+                    };
+                    
+                    const label = document.createElement('label');
+                    label.textContent = `${struct.icon} ${struct.name}`;
+                    label.style.cursor = 'pointer';
+                    label.onclick = () => checkbox.click();
+                    
+                    item.appendChild(checkbox);
+                    item.appendChild(label);
+                    section.appendChild(item);
+                    
+                    visibleStructures.add(struct.id);
                 });
-            }
-
-            // Générer les cavernes sphériques
-            for (let i = 0; i < 8; i++) {
-                const x = rng.nextInt(-mapSize, mapSize);
-                const z = rng.nextInt(-mapSize, mapSize);
                 
-                generated.push({
-                    type: 'sphere',
-                    name: 'Caverne Sphérique',
-                    icon: '⚪',
-                    x: x,
-                    z: z,
-                    id: `sphere_${x}_${z}`
-                });
+                sidebar.appendChild(section);
             }
+        }
 
+        function generateMap() {
+            const seedInput = document.getElementById('seedInput');
+            currentSeed = seedInput.value.trim() || 'default';
+            
+            document.getElementById('loading').style.display = 'block';
+            
+            setTimeout(() => {
+                structures = generateStructures(currentSeed);
+                document.getElementById('loading').style.display = 'none';
+                render();
+            }, 100);
+        }
+
+        function generateStructures(seed) {
+            const noise = new SimplexNoise(seed);
+            const generated = [];
+            const range = 3000;
+            const step = 50;
+            
+            // Generate trees based on noise
+            for (let x = -range; x < range; x += step) {
+                for (let z = -range; z < range; z += step) {
+                    const noiseValue = noise.noise2D(x / 300, z / 300);
+                    
+                    if (noiseValue > 0.2) {
+                        const treeNoise = noise.noise2D(x / 150 + 1000, z / 150);
+                        let treeType;
+                        if (treeNoise > 0.5) treeType = STRUCTURES.trees[0];
+                        else if (treeNoise > 0.2) treeType = STRUCTURES.trees[1];
+                        else if (treeNoise > -0.1) treeType = STRUCTURES.trees[2];
+                        else if (treeNoise > -0.3) treeType = STRUCTURES.trees[3];
+                        else treeType = STRUCTURES.trees[4];
+                        
+                        generated.push({
+                            type: treeType.id,
+                            name: treeType.name,
+                            icon: treeType.icon,
+                            color: treeType.color,
+                            x: x + (noise.noise2D(x / 50, z / 50) * 20),
+                            z: z + (noise.noise2D(x / 50 + 500, z / 50 + 500) * 20)
+                        });
+                    }
+                }
+            }
+            
+            // Generate caves
+            for (let x = -range; x < range; x += 100) {
+                for (let z = -range; z < range; z += 100) {
+                    const caveNoise = noise.noise2D(x / 400, z / 400);
+                    
+                    if (Math.abs(caveNoise) < 0.1) {
+                        generated.push({
+                            type: 'cave',
+                            name: 'Cave',
+                            icon: '🕳️',
+                            color: '#696969',
+                            x: x,
+                            z: z
+                        });
+                    }
+                }
+            }
+            
             return generated;
         }
 
-        // Générer la carte
-        function generateMap() {
-            const seedInput = document.getElementById('seedInput');
-            currentSeed = seedInput.value.trim() || 'default_seed';
+        function render() {
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            structures = generateStructures(currentSeed);
-            renderMap();
-            updateStats();
-        }
-
-        // Afficher les structures sur la carte
-        function renderMap() {
-            const canvas = document.getElementById('mapCanvas');
-            canvas.innerHTML = '';
-
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(zoom, zoom);
+            ctx.translate(offsetX, offsetY);
+            
+            // Draw grid
+            ctx.strokeStyle = '#1a2744';
+            ctx.lineWidth = 1 / zoom;
+            const gridSize = 100;
+            const startX = Math.floor((-offsetX - centerX / zoom) / gridSize) * gridSize;
+            const endX = Math.ceil((-offsetX + centerX / zoom) / gridSize) * gridSize;
+            const startZ = Math.floor((-offsetY - centerY / zoom) / gridSize) * gridSize;
+            const endZ = Math.ceil((-offsetY + centerY / zoom) / gridSize) * gridSize;
+            
+            for (let x = startX; x <= endX; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, startZ);
+                ctx.lineTo(x, endZ);
+                ctx.stroke();
+            }
+            for (let z = startZ; z <= endZ; z += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(startX, z);
+                ctx.lineTo(endX, z);
+                ctx.stroke();
+            }
+            
+            // Draw structures
+            const iconSize = Math.max(12, 20 / zoom);
+            ctx.font = `${iconSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
             structures.forEach(struct => {
-                if (!activeFilters.has(struct.type)) return;
-
-                const marker = document.createElement('div');
-                marker.className = 'structure-marker';
-                marker.innerHTML = struct.icon;
-                marker.style.left = `${struct.x}px`;
-                marker.style.top = `${struct.z}px`;
-                marker.dataset.structId = struct.id;
-
-                marker.addEventListener('mouseenter', (e) => showTooltip(e, struct));
-                marker.addEventListener('mouseleave', hideTooltip);
-                marker.addEventListener('click', () => selectStructure(struct));
-
-                canvas.appendChild(marker);
+                if (!visibleStructures.has(struct.type)) return;
+                
+                // Draw icon
+                ctx.fillText(struct.icon, struct.x, struct.z);
             });
-
-            updateTransform();
+            
+            ctx.restore();
         }
 
-        // Afficher tooltip
-        function showTooltip(e, struct) {
+        function worldToScreen(worldX, worldZ) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            return {
+                x: centerX + (worldX + offsetX) * zoom,
+                y: centerY + (worldZ + offsetY) * zoom
+            };
+        }
+
+        function screenToWorld(screenX, screenY) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            return {
+                x: (screenX - centerX) / zoom - offsetX,
+                z: (screenY - centerY) / zoom - offsetY
+            };
+        }
+
+        function findStructureAtPosition(worldX, worldZ) {
+            const threshold = 20 / zoom;
+            let closest = null;
+            let minDist = threshold;
+            
+            structures.forEach(struct => {
+                if (!visibleStructures.has(struct.type)) return;
+                
+                const dx = struct.x - worldX;
+                const dz = struct.z - worldZ;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = struct;
+                }
+            });
+            
+            return closest;
+        }
+
+        function onMouseDown(e) {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        }
+
+        function onMouseMove(e) {
+            if (isDragging) {
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                offsetX += dx / zoom;
+                offsetY += dy / zoom;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                render();
+            }
+            
+            updateCoords(e);
+            showTooltip(e);
+        }
+
+        function onMouseUp(e) {
+            if (!isDragging) {
+                // Click detected
+                const rect = canvas.getBoundingClientRect();
+                const screenX = e.clientX - rect.left;
+                const screenY = e.clientY - rect.top;
+                const world = screenToWorld(screenX, screenY);
+                
+                const struct = findStructureAtPosition(world.x, world.z);
+                if (struct) {
+                    const coords = `X: ${Math.floor(struct.x)}, Z: ${Math.floor(struct.z)}`;
+                    navigator.clipboard.writeText(coords).then(() => {
+                        alert(`${struct.name}\n${coords}\n\n✓ Coordonnées copiées dans le presse-papier !`);
+                    }).catch(() => {
+                        alert(`${struct.name}\n${coords}`);
+                    });
+                }
+            }
+            isDragging = false;
+        }
+
+        function showTooltip(e) {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+            
+            const struct = findStructureAtPosition(world.x, world.z);
             const tooltip = document.getElementById('tooltip');
-            tooltip.innerHTML = `
-                <strong>${struct.name}</strong><br>
-                X: ${struct.x}, Z: ${struct.z}
-            `;
-            tooltip.style.display = 'block';
-            updateTooltipPosition(e);
+            
+            if (struct) {
+                tooltip.textContent = `${struct.name}\nX: ${Math.floor(struct.x)}, Z: ${Math.floor(struct.z)}`;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.style.display = 'block';
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = isDragging ? 'grabbing' : 'grab';
+            }
         }
 
-        function updateTooltipPosition(e) {
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.left = e.pageX + 15 + 'px';
-            tooltip.style.top = e.pageY + 15 + 'px';
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= delta;
+            zoom = Math.max(0.1, Math.min(5, zoom));
+            render();
         }
 
-        function hideTooltip() {
-            document.getElementById('tooltip').style.display = 'none';
+        function updateCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - canvas.width / 2) / zoom - offsetX;
+            const z = (e.clientY - rect.top - canvas.height / 2) / zoom - offsetY;
+            document.getElementById('coordsDisplay').textContent = `X: ${Math.floor(x)}, Z: ${Math.floor(z)}`;
         }
 
-        // Sélectionner une structure
-        function selectStructure(struct) {
-            alert(`${struct.name}\nCoordonnées: X=${struct.x}, Z=${struct.z}\nSeed: ${currentSeed}`);
-        }
-
-        // Zoom
         function zoomIn() {
-            zoom = Math.min(zoom * 1.2, 5);
-            updateTransform();
-            updateZoomDisplay();
+            zoom *= 1.2;
+            render();
         }
 
         function zoomOut() {
-            zoom = Math.max(zoom / 1.2, 0.1);
-            updateTransform();
-            updateZoomDisplay();
-        }
-
-        function updateZoomDisplay() {
-            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            zoom /= 1.2;
+            render();
         }
 
         function resetView() {
             zoom = 1;
-            panX = 0;
-            panY = 0;
-            updateTransform();
-            updateZoomDisplay();
+            offsetX = 0;
+            offsetY = 0;
+            render();
         }
 
-        function updateTransform() {
-            const canvas = document.getElementById('mapCanvas');
-            canvas.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom})`;
-        }
-
-        // Pan (déplacement)
-        const mapContainer = document.getElementById('mapContainer');
-        let touchStartDist = 0;
-        let touchStartZoom = 1;
-
-        mapContainer.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-        });
-
-        mapContainer.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                panX += e.clientX - lastX;
-                panY += e.clientY - lastY;
-                lastX = e.clientX;
-                lastY = e.clientY;
-                updateTransform();
-            }
-
-            const tooltip = document.getElementById('tooltip');
-            if (tooltip.style.display === 'block') {
-                updateTooltipPosition(e);
-            }
-        });
-
-        mapContainer.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        mapContainer.addEventListener('mouseleave', () => {
-            isDragging = false;
-        });
-
-        // Scroll pour zoom
-        mapContainer.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            if (e.deltaY < 0) {
-                zoomIn();
-            } else {
-                zoomOut();
-            }
-        });
-
-        // Touch events pour mobile
-        mapContainer.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                touchStartDist = Math.sqrt(dx * dx + dy * dy);
-                touchStartZoom = zoom;
-            } else if (e.touches.length === 1) {
-                isDragging = true;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-            }
-        });
-
-        mapContainer.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 2) {
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                zoom = touchStartZoom * (dist / touchStartDist);
-                zoom = Math.max(0.1, Math.min(5, zoom));
-                updateTransform();
-                updateZoomDisplay();
-            } else if (e.touches.length === 1 && isDragging) {
-                panX += e.touches[0].clientX - lastX;
-                panY += e.touches[0].clientY - lastY;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-                updateTransform();
-            }
-        });
-
-        mapContainer.addEventListener('touchend', () => {
-            isDragging = false;
-        });
-
-        // Créer les filtres
-        function initFilters() {
-            const container = document.getElementById('structureFilters');
-            
-            STRUCTURE_CONFIGS.forEach(struct => {
-                const item = document.createElement('div');
-                item.className = 'filter-item';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `filter_${struct.id}`;
-                checkbox.checked = true;
-                checkbox.addEventListener('change', () => toggleFilter(struct.id));
-                
-                const icon = document.createElement('span');
-                icon.className = 'structure-icon';
-                icon.textContent = struct.icon;
-                
-                const label = document.createElement('label');
-                label.htmlFor = `filter_${struct.id}`;
-                label.textContent = struct.name;
-                
-                item.appendChild(checkbox);
-                item.appendChild(icon);
-                item.appendChild(label);
-                
-                item.addEventListener('click', (e) => {
-                    if (e.target !== checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        toggleFilter(struct.id);
-                    }
-                });
-                
-                container.appendChild(item);
-            });
-        }
-
-        function toggleFilter(structId) {
-            if (activeFilters.has(structId)) {
-                activeFilters.delete(structId);
-            } else {
-                activeFilters.add(structId);
-            }
-            renderMap();
-            updateStats();
-        }
-
-        function updateStats() {
-            const visible = structures.filter(s => activeFilters.has(s.type)).length;
-            const total = structures.length;
-            document.getElementById('stats').textContent = 
-                `Seed: "${currentSeed}" | ${visible} structures visibles sur ${total} | Zoom: ${Math.round(zoom * 100)}%`;
-        }
-
-        // Initialisation
-        initFilters();
-        
-        // Générer une carte par défaut
-        document.getElementById('seedInput').value = 'minecraft123';
-        generateMap();
+        init();
     </script>
 </body>
 </html>
