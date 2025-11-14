@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Carte de Structures</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .seed-input-container {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .seed-input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            width: 300px;
+            transition: all 0.3s;
+        }
+
+        .seed-input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .seed-input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+
+        .generate-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .map-container {
+            position: relative;
+            height: 600px;
+            background: #f0f0f0;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .map-container:active {
+            cursor: grabbing;
+        }
+
+        .map-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center;
+        }
+
+        .structure-marker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .structure-marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            z-index: 100;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .zoom-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .zoom-level {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #667eea;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .structure-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #e0e0e0;
+        }
+
+        .filter-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .filter-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .filter-item label {
+            cursor: pointer;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .structure-icon {
+            font-size: 20px;
+        }
+
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .map-container {
+                height: 400px;
+            }
+
+            .structure-filters {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Générateur de Carte de Structures</h1>
+            <div class="seed-input-container">
+                <input type="text" class="seed-input" id="seedInput" placeholder="Entrez une seed (ex: minecraft123)">
+                <button class="generate-btn" onclick="generateMap()">Générer la Carte</button>
+            </div>
+        </div>
+
+        <div class="map-container" id="mapContainer">
+            <div class="map-canvas" id="mapCanvas"></div>
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+
+        <div class="controls">
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomOut()">-</button>
+                <div class="zoom-level" id="zoomLevel">100%</div>
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="resetView()">🎯 Centrer</button>
+            </div>
+
+            <div class="structure-filters" id="structureFilters"></div>
+
+            <div class="stats" id="stats">
+                Aucune carte générée
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const STRUCTURES = [
+            { id: 'maple', name: 'Érable', icon: '🍁', color: '#c94c4c' },
+            { id: 'pine', name: 'Pin', icon: '🌲', color: '#2d5016' },
+            { id: 'plum', name: 'Prunier', icon: '🌸', color: '#ff69b4' },
+            { id: 'cedar', name: 'Cèdre', icon: '🌲', color: '#654321' },
+            { id: 'aspen', name: 'Tremble', icon: '🍃', color: '#90ee90' },
+            { id: 'jungle', name: 'Jungle', icon: '🌴', color: '#228b22' },
+            { id: 'palm', name: 'Palmier', icon: '🌴', color: '#daa520' },
+            { id: 'cherry', name: 'Cerisier', icon: '🌸', color: '#ffb7c5' },
+            { id: 'mango', name: 'Manguier', icon: '🥭', color: '#ff8c00' },
+            { id: 'cave', name: 'Caverne', icon: '🕳️', color: '#696969' },
+            { id: 'ravine', name: 'Ravin', icon: '⛰️', color: '#8b4513' },
+            { id: 'pit', name: 'Fosse', icon: '🔥', color: '#ff4500' },
+            { id: 'village', name: 'Village', icon: '🏘️', color: '#8b7355' },
+            { id: 'dungeon', name: 'Donjon', icon: '🏰', color: '#2f4f4f' },
+            { id: 'temple', name: 'Temple', icon: '⛩️', color: '#daa520' }
+        ];
+
+        let currentSeed = '';
+        let structures = [];
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+        let activeFilters = new Set(STRUCTURES.map(s => s.id));
+
+        // Hash function pour générer des nombres pseudo-aléatoires
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        // Générateur pseudo-aléatoire simple
+        class SimpleRandom {
+            constructor(seed) {
+                this.seed = hashCode(seed.toString());
+            }
+
+            next() {
+                this.seed = (this.seed * 9301 + 49297) % 233280;
+                return this.seed / 233280;
+            }
+
+            nextInt(min, max) {
+                return Math.floor(this.next() * (max - min + 1)) + min;
+            }
+        }
+
+        // Générer les structures basées sur la seed
+        function generateStructures(seed) {
+            const rng = new SimpleRandom(seed);
+            const generated = [];
+            const mapSize = 2000; // Taille de la carte en blocs
+            const minDistance = 50; // Distance minimale entre structures
+
+            // Générer différents types de structures
+            for (const structType of STRUCTURES) {
+                const count = rng.nextInt(5, 15); // 5 à 15 de chaque type
+                
+                for (let i = 0; i < count; i++) {
+                    const x = rng.nextInt(-mapSize, mapSize);
+                    const z = rng.nextInt(-mapSize, mapSize);
+                    
+                    // Vérifier la distance minimale
+                    const tooClose = generated.some(s => {
+                        const dist = Math.sqrt((s.x - x) ** 2 + (s.z - z) ** 2);
+                        return dist < minDistance;
+                    });
+
+                    if (!tooClose) {
+                        generated.push({
+                            type: structType.id,
+                            name: structType.name,
+                            icon: structType.icon,
+                            color: structType.color,
+                            x: x,
+                            z: z,
+                            id: `${structType.id}_${i}`
+                        });
+                    }
+                }
+            }
+
+            return generated;
+        }
+
+        // Générer la carte
+        function generateMap() {
+            const seedInput = document.getElementById('seedInput');
+            currentSeed = seedInput.value.trim() || 'default_seed';
+            
+            structures = generateStructures(currentSeed);
+            renderMap();
+            updateStats();
+        }
+
+        // Afficher les structures sur la carte
+        function renderMap() {
+            const canvas = document.getElementById('mapCanvas');
+            canvas.innerHTML = '';
+
+            structures.forEach(struct => {
+                if (!activeFilters.has(struct.type)) return;
+
+                const marker = document.createElement('div');
+                marker.className = 'structure-marker';
+                marker.innerHTML = struct.icon;
+                marker.style.left = `${struct.x}px`;
+                marker.style.top = `${struct.z}px`;
+                marker.dataset.structId = struct.id;
+
+                marker.addEventListener('mouseenter', (e) => showTooltip(e, struct));
+                marker.addEventListener('mouseleave', hideTooltip);
+                marker.addEventListener('click', () => selectStructure(struct));
+
+                canvas.appendChild(marker);
+            });
+
+            updateTransform();
+        }
+
+        // Afficher tooltip
+        function showTooltip(e, struct) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.innerHTML = `
+                <strong>${struct.name}</strong><br>
+                X: ${struct.x}, Z: ${struct.z}
+            `;
+            tooltip.style.display = 'block';
+            updateTooltipPosition(e);
+        }
+
+        function updateTooltipPosition(e) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.left = e.pageX + 15 + 'px';
+            tooltip.style.top = e.pageY + 15 + 'px';
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').style.display = 'none';
+        }
+
+        // Sélectionner une structure
+        function selectStructure(struct) {
+            alert(`${struct.name}\nCoordonnées: X=${struct.x}, Z=${struct.z}\nSeed: ${currentSeed}`);
+        }
+
+        // Zoom
+        function zoomIn() {
+            zoom = Math.min(zoom * 1.2, 5);
+            updateTransform();
+            updateZoomDisplay();
+        }
+
+        function zoomOut() {
+            zoom = Math.max(zoom / 1.2, 0.1);
+            updateTransform();
+            updateZoomDisplay();
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+        }
+
+        function resetView() {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+            updateZoomDisplay();
+        }
+
+        function updateTransform() {
+            const canvas = document.getElementById('mapCanvas');
+            canvas.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom})`;
+        }
+
+        // Pan (déplacement)
+        const mapContainer = document.getElementById('mapContainer');
+        let touchStartDist = 0;
+        let touchStartZoom = 1;
+
+        mapContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        mapContainer.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                panX += e.clientX - lastX;
+                panY += e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                updateTransform();
+            }
+
+            // Update tooltip position
+            const tooltip = document.getElementById('tooltip');
+            if (tooltip.style.display === 'block') {
+                updateTooltipPosition(e);
+            }
+        });
+
+        mapContainer.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        mapContainer.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        // Scroll pour zoom
+        mapContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        });
+
+        // Touch events pour mobile
+        mapContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDist = Math.sqrt(dx * dx + dy * dy);
+                touchStartZoom = zoom;
+            } else if (e.touches.length === 1) {
+                isDragging = true;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            }
+        });
+
+        mapContainer.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                zoom = touchStartZoom * (dist / touchStartDist);
+                zoom = Math.max(0.1, Math.min(5, zoom));
+                updateTransform();
+                updateZoomDisplay();
+            } else if (e.touches.length === 1 && isDragging) {
+                panX += e.touches[0].clientX - lastX;
+                panY += e.touches[0].clientY - lastY;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+                updateTransform();
+            }
+        });
+
+        mapContainer.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Créer les filtres
+        function initFilters() {
+            const container = document.getElementById('structureFilters');
+            
+            STRUCTURES.forEach(struct => {
+                const item = document.createElement('div');
+                item.className = 'filter-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `filter_${struct.id}`;
+                checkbox.checked = true;
+                checkbox.addEventListener('change', () => toggleFilter(struct.id));
+                
+                const icon = document.createElement('span');
+                icon.className = 'structure-icon';
+                icon.textContent = struct.icon;
+                
+                const label = document.createElement('label');
+                label.htmlFor = `filter_${struct.id}`;
+                label.textContent = struct.name;
+                
+                item.appendChild(checkbox);
+                item.appendChild(icon);
+                item.appendChild(label);
+                
+                item.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleFilter(struct.id);
+                    }
+                });
+                
+                container.appendChild(item);
+            });
+        }
+
+        function toggleFilter(structId) {
+            if (activeFilters.has(structId)) {
+                activeFilters.delete(structId);
+            } else {
+                activeFilters.add(structId);
+            }
+            renderMap();
+            updateStats();
+        }
+
+        function updateStats() {
+            const visible = structures.filter(s => activeFilters.has(s.type)).length;
+            const total = structures.length;
+            document.getElementById('stats').textContent = 
+                `Seed: "${currentSeed}" | ${visible} structures visibles sur ${total} | Zoom: ${Math.round(zoom * 100)}%`;
+        }
+
+        // Initialisation
+        initFilters();
+        
+        // Générer une carte par défaut
+        document.getElementById('seedInput').value = 'minecraft123';
+        generateMap();
+    </script>
+</body>
+</html>
