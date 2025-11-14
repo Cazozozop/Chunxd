@@ -88,10 +88,14 @@
         .map-container {
             position: relative;
             height: 600px;
-            background: #f0f0f0;
+            background: #8fbc8f;
             overflow: hidden;
             cursor: grab;
             touch-action: none;
+            background-image: 
+                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 50px 50px;
         }
 
         .map-container:active {
@@ -120,7 +124,7 @@
         }
 
         .structure-marker:hover {
-            transform: translate(-50%, -50%) scale(1.3);
+            transform: translate(-50%, -50%) scale(1.4);
             z-index: 100;
         }
 
@@ -128,13 +132,14 @@
             position: absolute;
             background: rgba(0,0,0,0.9);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             pointer-events: none;
             z-index: 1000;
             white-space: nowrap;
             display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         .controls {
@@ -148,6 +153,7 @@
             gap: 10px;
             justify-content: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .zoom-btn {
@@ -180,15 +186,15 @@
 
         .structure-filters {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
         }
 
         .filter-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px;
+            padding: 10px 12px;
             background: white;
             border-radius: 10px;
             cursor: pointer;
@@ -203,8 +209,8 @@
         }
 
         .filter-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
             accent-color: #667eea;
         }
@@ -213,10 +219,11 @@
             cursor: pointer;
             font-weight: 500;
             flex: 1;
+            font-size: 14px;
         }
 
         .structure-icon {
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .stats {
@@ -276,23 +283,43 @@
     </div>
 
     <script>
-        // Configuration
-        const STRUCTURES = [
-            { id: 'maple', name: 'Érable', icon: '🍁', color: '#c94c4c' },
-            { id: 'pine', name: 'Pin', icon: '🌲', color: '#2d5016' },
-            { id: 'plum', name: 'Prunier', icon: '🌸', color: '#ff69b4' },
-            { id: 'cedar', name: 'Cèdre', icon: '🌲', color: '#654321' },
-            { id: 'aspen', name: 'Tremble', icon: '🍃', color: '#90ee90' },
-            { id: 'jungle', name: 'Jungle', icon: '🌴', color: '#228b22' },
-            { id: 'palm', name: 'Palmier', icon: '🌴', color: '#daa520' },
-            { id: 'cherry', name: 'Cerisier', icon: '🌸', color: '#ffb7c5' },
-            { id: 'mango', name: 'Manguier', icon: '🥭', color: '#ff8c00' },
-            { id: 'cave', name: 'Caverne', icon: '🕳️', color: '#696969' },
-            { id: 'ravine', name: 'Ravin', icon: '⛰️', color: '#8b4513' },
-            { id: 'pit', name: 'Fosse', icon: '🔥', color: '#ff4500' },
-            { id: 'village', name: 'Village', icon: '🏘️', color: '#8b7355' },
-            { id: 'dungeon', name: 'Donjon', icon: '🏰', color: '#2f4f4f' },
-            { id: 'temple', name: 'Temple', icon: '⛩️', color: '#daa520' }
+        // Structures extraites du code source
+        const TREE_TYPES = {
+            Maple: { id: 0, name: 'Érable', icon: '🍁' },
+            Pine: { id: 1, name: 'Pin', icon: '🌲' },
+            Plum: { id: 2, name: 'Prunier', icon: '🌸' },
+            Cedar: { id: 4, name: 'Cèdre', icon: '🌲' },
+            Aspen: { id: 5, name: 'Tremble', icon: '🍃' },
+            Jungle: { id: 6, name: 'Jungle', icon: '🌴' },
+            Palm: { id: 7, name: 'Palmier', icon: '🌴' },
+            AutumnMaple: { id: 8, name: 'Érable Automne', icon: '🍂' },
+            Pear: { id: 9, name: 'Poirier', icon: '🍐' },
+            Cherry: { id: 10, name: 'Cerisier', icon: '🌸' },
+            Spectral: { id: 11, name: 'Spectral', icon: '👻' },
+            Mango: { id: 12, name: 'Manguier', icon: '🥭' },
+            AutumnAspen: { id: 13, name: 'Tremble Automne', icon: '🍂' }
+        };
+
+        const CAVE_TYPES = [
+            { id: 'spaghetti', name: 'Caverne Spaghetti', icon: '🕳️', count: 6 },
+            { id: 'pit', name: 'Fosse', icon: '🔥', count: 2 },
+            { id: 'ravine', name: 'Ravin', icon: '⛰️', count: 2 },
+            { id: 'sphere', name: 'Caverne Sphérique', icon: '⚪', count: 1 }
+        ];
+
+        const STRUCTURE_CONFIGS = [
+            ...Object.values(TREE_TYPES).map(tree => ({
+                id: `tree_${tree.id}`,
+                name: tree.name,
+                icon: tree.icon,
+                type: 'tree'
+            })),
+            ...CAVE_TYPES.map(cave => ({
+                id: cave.id,
+                name: cave.name,
+                icon: cave.icon,
+                type: 'cave'
+            }))
         ];
 
         let currentSeed = '';
@@ -303,23 +330,77 @@
         let isDragging = false;
         let lastX = 0;
         let lastY = 0;
-        let activeFilters = new Set(STRUCTURES.map(s => s.id));
+        let activeFilters = new Set(STRUCTURE_CONFIGS.map(s => s.id));
 
-        // Hash function pour générer des nombres pseudo-aléatoires
-        function hashCode(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
+        // Implémentation du générateur Simplex Noise (simplifié)
+        class SimplexNoise {
+            constructor(seed) {
+                this.seed = seed;
+                this.p = this.buildPermutationTable(seed);
             }
-            return Math.abs(hash);
+
+            buildPermutationTable(seed) {
+                const p = [];
+                for (let i = 0; i < 256; i++) p[i] = i;
+                
+                let n, q;
+                for (let i = 255; i > 0; i--) {
+                    seed = (seed * 9301 + 49297) % 233280;
+                    n = seed / 233280;
+                    q = Math.floor(n * (i + 1));
+                    [p[i], p[q]] = [p[q], p[i]];
+                }
+                
+                return [...p, ...p];
+            }
+
+            noise2D(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+                
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+                
+                const u = this.fade(x);
+                const v = this.fade(y);
+                
+                const A = this.p[X] + Y;
+                const B = this.p[X + 1] + Y;
+                
+                return this.lerp(v,
+                    this.lerp(u, this.grad(this.p[A], x, y), this.grad(this.p[B], x - 1, y)),
+                    this.lerp(u, this.grad(this.p[A + 1], x, y - 1), this.grad(this.p[B + 1], x - 1, y - 1))
+                );
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(t, a, b) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 3;
+                return ((h & 1) === 0 ? x : -x) + ((h & 2) === 0 ? y : -y);
+            }
         }
 
-        // Générateur pseudo-aléatoire simple
-        class SimpleRandom {
+        // Générateur pseudo-aléatoire
+        class SeededRandom {
             constructor(seed) {
-                this.seed = hashCode(seed.toString());
+                this.seed = this.hashString(seed);
+            }
+
+            hashString(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash);
             }
 
             next() {
@@ -332,39 +413,183 @@
             }
         }
 
-        // Générer les structures basées sur la seed
-        function generateStructures(seed) {
-            const rng = new SimpleRandom(seed);
-            const generated = [];
-            const mapSize = 2000; // Taille de la carte en blocs
-            const minDistance = 50; // Distance minimale entre structures
+        // Générateur de points Poisson Disk (inspiré du code)
+        class PoissonDiskGenerator {
+            constructor(seed, minDist, width, height) {
+                this.rng = new SeededRandom(seed);
+                this.minDist = minDist;
+                this.width = width;
+                this.height = height;
+                this.cellSize = minDist / Math.sqrt(2);
+                this.grid = [];
+                this.active = [];
+                this.points = [];
+            }
 
-            // Générer différents types de structures
-            for (const structType of STRUCTURES) {
-                const count = rng.nextInt(5, 15); // 5 à 15 de chaque type
+            generate() {
+                const cols = Math.ceil(this.width / this.cellSize);
+                const rows = Math.ceil(this.height / this.cellSize);
                 
-                for (let i = 0; i < count; i++) {
-                    const x = rng.nextInt(-mapSize, mapSize);
-                    const z = rng.nextInt(-mapSize, mapSize);
-                    
-                    // Vérifier la distance minimale
-                    const tooClose = generated.some(s => {
-                        const dist = Math.sqrt((s.x - x) ** 2 + (s.z - z) ** 2);
-                        return dist < minDistance;
-                    });
+                for (let i = 0; i < cols * rows; i++) {
+                    this.grid[i] = undefined;
+                }
 
-                    if (!tooClose) {
-                        generated.push({
-                            type: structType.id,
-                            name: structType.name,
-                            icon: structType.icon,
-                            color: structType.color,
-                            x: x,
-                            z: z,
-                            id: `${structType.id}_${i}`
-                        });
+                const x = this.width / 2;
+                const y = this.height / 2;
+                const pos = [x, y];
+                
+                const col = Math.floor(x / this.cellSize);
+                const row = Math.floor(y / this.cellSize);
+                this.grid[col + row * cols] = pos;
+                this.active.push(pos);
+                this.points.push(pos);
+
+                while (this.active.length > 0) {
+                    const randIndex = Math.floor(this.rng.next() * this.active.length);
+                    const pos = this.active[randIndex];
+                    let found = false;
+
+                    for (let n = 0; n < 30; n++) {
+                        const angle = this.rng.next() * Math.PI * 2;
+                        const r = this.minDist + this.rng.next() * this.minDist;
+                        const newX = pos[0] + Math.cos(angle) * r;
+                        const newY = pos[1] + Math.sin(angle) * r;
+
+                        if (newX >= 0 && newX < this.width && newY >= 0 && newY < this.height) {
+                            const newCol = Math.floor(newX / this.cellSize);
+                            const newRow = Math.floor(newY / this.cellSize);
+                            
+                            let ok = true;
+                            for (let i = -1; i <= 1; i++) {
+                                for (let j = -1; j <= 1; j++) {
+                                    const index = (newCol + i) + (newRow + j) * cols;
+                                    const neighbor = this.grid[index];
+                                    if (neighbor) {
+                                        const d = Math.hypot(newX - neighbor[0], newY - neighbor[1]);
+                                        if (d < this.minDist) {
+                                            ok = false;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (ok) {
+                                const newPos = [newX, newY];
+                                this.grid[newCol + newRow * cols] = newPos;
+                                this.active.push(newPos);
+                                this.points.push(newPos);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        this.active.splice(randIndex, 1);
                     }
                 }
+
+                return this.points;
+            }
+        }
+
+        // Générer les structures avec l'algorithme du jeu
+        function generateStructures(seed) {
+            const generated = [];
+            const mapSize = 2000;
+            const rng = new SeededRandom(seed);
+            const noise = new SimplexNoise(seed);
+
+            // Générer les arbres avec Poisson Disk
+            for (const treeType of Object.values(TREE_TYPES)) {
+                const treeSeed = `${seed}_tree_${treeType.id}`;
+                const poisson = new PoissonDiskGenerator(treeSeed, 80, mapSize * 2, mapSize * 2);
+                const points = poisson.generate();
+
+                points.forEach((point, idx) => {
+                    const x = Math.floor(point[0] - mapSize);
+                    const z = Math.floor(point[1] - mapSize);
+                    
+                    // Utiliser le bruit pour varier les biomes
+                    const biomeNoise = noise.noise2D(x / 500, z / 500);
+                    
+                    if (Math.abs(biomeNoise) > 0.3 || idx % 3 !== 0) return; // Filtrer certains arbres
+
+                    generated.push({
+                        type: `tree_${treeType.id}`,
+                        name: treeType.name,
+                        icon: treeType.icon,
+                        x: x,
+                        z: z,
+                        id: `${treeType.name}_${x}_${z}`
+                    });
+                });
+            }
+
+            // Générer les cavernes (spaghetti caves)
+            const cavePoisson = new PoissonDiskGenerator(`${seed}_caves`, 200, mapSize * 2, mapSize * 2);
+            const cavePoints = cavePoisson.generate();
+
+            cavePoints.forEach((point, idx) => {
+                const x = Math.floor(point[0] - mapSize);
+                const z = Math.floor(point[1] - mapSize);
+                
+                const caveNoise = noise.noise2D(x / 300, z / 300);
+                if (Math.abs(caveNoise) < 0.1) {
+                    generated.push({
+                        type: 'spaghetti',
+                        name: 'Caverne Spaghetti',
+                        icon: '🕳️',
+                        x: x,
+                        z: z,
+                        id: `spaghetti_${x}_${z}`
+                    });
+                }
+            });
+
+            // Générer les fosses (moins fréquentes)
+            for (let i = 0; i < 15; i++) {
+                const x = rng.nextInt(-mapSize, mapSize);
+                const z = rng.nextInt(-mapSize, mapSize);
+                
+                generated.push({
+                    type: 'pit',
+                    name: 'Fosse',
+                    icon: '🔥',
+                    x: x,
+                    z: z,
+                    id: `pit_${x}_${z}`
+                });
+            }
+
+            // Générer les ravins
+            for (let i = 0; i < 10; i++) {
+                const x = rng.nextInt(-mapSize, mapSize);
+                const z = rng.nextInt(-mapSize, mapSize);
+                
+                generated.push({
+                    type: 'ravine',
+                    name: 'Ravin',
+                    icon: '⛰️',
+                    x: x,
+                    z: z,
+                    id: `ravine_${x}_${z}`
+                });
+            }
+
+            // Générer les cavernes sphériques
+            for (let i = 0; i < 8; i++) {
+                const x = rng.nextInt(-mapSize, mapSize);
+                const z = rng.nextInt(-mapSize, mapSize);
+                
+                generated.push({
+                    type: 'sphere',
+                    name: 'Caverne Sphérique',
+                    icon: '⚪',
+                    x: x,
+                    z: z,
+                    id: `sphere_${x}_${z}`
+                });
             }
 
             return generated;
@@ -481,7 +706,6 @@
                 updateTransform();
             }
 
-            // Update tooltip position
             const tooltip = document.getElementById('tooltip');
             if (tooltip.style.display === 'block') {
                 updateTooltipPosition(e);
@@ -547,7 +771,7 @@
         function initFilters() {
             const container = document.getElementById('structureFilters');
             
-            STRUCTURES.forEach(struct => {
+            STRUCTURE_CONFIGS.forEach(struct => {
                 const item = document.createElement('div');
                 item.className = 'filter-item';
                 
