@@ -27,7 +27,7 @@
 
         .header {
             background: #16213e;
-            padding: 15px 20px;
+            padding: 12px 20px;
             border-bottom: 2px solid #0f3460;
             display: flex;
             align-items: center;
@@ -37,7 +37,7 @@
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #e94560;
         }
@@ -69,8 +69,9 @@
 
         .coords-display {
             margin-left: auto;
-            font-size: 14px;
+            font-size: 13px;
             color: #aaa;
+            font-family: monospace;
         }
 
         .main-content {
@@ -80,32 +81,33 @@
         }
 
         .sidebar {
-            width: 250px;
+            width: 220px;
             background: #16213e;
             border-right: 2px solid #0f3460;
             overflow-y: auto;
-            padding: 15px;
+            padding: 12px;
         }
 
         .filter-section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .filter-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #e94560;
+            text-transform: uppercase;
         }
 
         .filter-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 6px;
+            padding: 5px;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .filter-item:hover {
@@ -128,71 +130,49 @@
             cursor: grabbing;
         }
 
-        .map-canvas {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0 0;
-            will-change: transform;
-        }
-
-        .structure-marker {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.1s;
-        }
-
-        .structure-marker:hover {
-            transform: translate(-50%, -50%) scale(1.5);
-            z-index: 10;
-        }
-
         .tooltip {
             position: fixed;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.95);
             color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 6px;
             font-size: 12px;
             pointer-events: none;
             z-index: 1000;
             display: none;
             white-space: pre-line;
+            border: 2px solid #e94560;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
         }
 
         .zoom-controls {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             z-index: 10;
         }
 
         .zoom-btn {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: #16213e;
             border: 2px solid #0f3460;
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: bold;
         }
 
         .zoom-btn:hover {
             background: #1a1a2e;
+            border-color: #e94560;
         }
 
         .loading {
@@ -200,8 +180,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 18px;
+            font-size: 16px;
             color: #e94560;
+            background: rgba(22, 33, 62, 0.9);
+            padding: 20px 40px;
+            border-radius: 8px;
+            border: 2px solid #e94560;
         }
 
         @media (max-width: 768px) {
@@ -214,10 +198,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🗺️ Bloxd.io Finder</div>
-            <input type="text" class="seed-input" id="seedInput" placeholder="Seed...">
-            <button class="generate-btn" onclick="generateMap()">Generate</button>
-            <div class="coords-display" id="coordsDisplay">X: 0, Z: 0</div>
+            <div class="logo">🗺️ Bloxd.io Structure Finder</div>
+            <input type="text" class="seed-input" id="seedInput" placeholder="Enter seed...">
+            <button class="generate-btn" onclick="generateMap()">Generate Map</button>
+            <div class="coords-display" id="coordsDisplay">X: 0 | Z: 0</div>
         </div>
 
         <div class="main-content">
@@ -230,20 +214,20 @@
                     <button class="zoom-btn" onclick="zoomOut()">−</button>
                     <button class="zoom-btn" onclick="resetView()">⌖</button>
                 </div>
-                <div class="loading" id="loading" style="display:none">Generating...</div>
+                <div class="loading" id="loading" style="display:none">Generating world...</div>
                 <div class="tooltip" id="tooltip"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Code extrait du fichier source
-        const F2 = .5 * (Math.sqrt(3) - 1);
+        // Implémentation exacte du SimplexNoise de bloxd.io
+        const F2 = 0.5 * (Math.sqrt(3) - 1);
         const G2 = (3 - Math.sqrt(3)) / 6;
         const grad3 = new Float32Array([1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1]);
 
         class SimplexNoise {
-            constructor(seed = Math.random) {
+            constructor(seed) {
                 const random = typeof seed === 'function' ? seed : this.createRandom(seed);
                 this.p = this.buildPermutationTable(random);
                 this.perm = new Uint8Array(512);
@@ -319,11 +303,9 @@
                 
                 let i1, j1;
                 if (x0 > y0) {
-                    i1 = 1;
-                    j1 = 0;
+                    i1 = 1; j1 = 0;
                 } else {
-                    i1 = 0;
-                    j1 = 1;
+                    i1 = 0; j1 = 1;
                 }
                 
                 const x1 = x0 - i1 + G2;
@@ -368,23 +350,23 @@
         // Configuration des structures
         const STRUCTURES = {
             trees: [
-                { id: 'maple', name: 'Maple', icon: '🍁', color: '#c94c4c' },
-                { id: 'pine', name: 'Pine', icon: '🌲', color: '#2d5016' },
-                { id: 'plum', name: 'Plum', icon: '🌸', color: '#ff69b4' },
-                { id: 'cedar', name: 'Cedar', icon: '🌲', color: '#654321' },
-                { id: 'aspen', name: 'Aspen', icon: '🍃', color: '#90ee90' },
-                { id: 'jungle', name: 'Jungle', icon: '🌴', color: '#228b22' },
-                { id: 'palm', name: 'Palm', icon: '🌴', color: '#daa520' }
+                { id: 'maple', name: 'Maple Tree', icon: '🍁', color: '#c94c4c' },
+                { id: 'pine', name: 'Pine Tree', icon: '🌲', color: '#2d5016' },
+                { id: 'plum', name: 'Plum Tree', icon: '🌸', color: '#ff69b4' },
+                { id: 'cedar', name: 'Cedar Tree', icon: '🌲', color: '#654321' },
+                { id: 'aspen', name: 'Aspen Tree', icon: '🍃', color: '#90ee90' },
+                { id: 'jungle', name: 'Jungle Tree', icon: '🌴', color: '#228b22' },
+                { id: 'palm', name: 'Palm Tree', icon: '🌴', color: '#daa520' }
             ],
             caves: [
-                { id: 'cave', name: 'Cave', icon: '🕳️', color: '#696969' },
-                { id: 'pit', name: 'Pit', icon: '🔥', color: '#ff4500' },
+                { id: 'cave', name: 'Cave Entrance', icon: '🕳️', color: '#696969' },
+                { id: 'pit', name: 'Pit Cave', icon: '🔥', color: '#ff4500' },
                 { id: 'ravine', name: 'Ravine', icon: '⛰️', color: '#8b4513' }
             ]
         };
 
         let canvas, ctx;
-        let zoom = 1;
+        let zoom = 0.5;
         let offsetX = 0, offsetY = 0;
         let isDragging = false;
         let lastX, lastY;
@@ -394,23 +376,17 @@
 
         function init() {
             canvas = document.getElementById('mapCanvas');
-            ctx = canvas.getContext('2d');
+            ctx = canvas.getContext('2d', { alpha: false });
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            // Initialize filters
             initFilters();
             
-            // Mouse events
             canvas.addEventListener('mousedown', onMouseDown);
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
-            canvas.addEventListener('mouseleave', () => {
-                document.getElementById('tooltip').style.display = 'none';
-            });
             canvas.addEventListener('wheel', onWheel, { passive: false });
             
-            // Default seed
             document.getElementById('seedInput').value = 'bloxd123';
             generateMap();
         }
@@ -476,21 +452,21 @@
                 structures = generateStructures(currentSeed);
                 document.getElementById('loading').style.display = 'none';
                 render();
-            }, 100);
+            }, 50);
         }
 
         function generateStructures(seed) {
             const noise = new SimplexNoise(seed);
             const generated = [];
-            const range = 3000;
-            const step = 50;
+            const range = 5000;
+            const step = 32;
             
             // Generate trees based on noise
             for (let x = -range; x < range; x += step) {
                 for (let z = -range; z < range; z += step) {
                     const noiseValue = noise.noise2D(x / 300, z / 300);
                     
-                    if (noiseValue > 0.2) {
+                    if (noiseValue > 0.15) {
                         const treeNoise = noise.noise2D(x / 150 + 1000, z / 150);
                         let treeType;
                         if (treeNoise > 0.5) treeType = STRUCTURES.trees[0];
@@ -499,13 +475,16 @@
                         else if (treeNoise > -0.3) treeType = STRUCTURES.trees[3];
                         else treeType = STRUCTURES.trees[4];
                         
+                        const offsetX = noise.noise2D(x / 50, z / 50) * 20;
+                        const offsetZ = noise.noise2D(x / 50 + 500, z / 50 + 500) * 20;
+                        
                         generated.push({
                             type: treeType.id,
                             name: treeType.name,
                             icon: treeType.icon,
                             color: treeType.color,
-                            x: x + (noise.noise2D(x / 50, z / 50) * 20),
-                            z: z + (noise.noise2D(x / 50 + 500, z / 50 + 500) * 20)
+                            x: x + offsetX,
+                            z: z + offsetZ
                         });
                     }
                 }
@@ -516,10 +495,10 @@
                 for (let z = -range; z < range; z += 100) {
                     const caveNoise = noise.noise2D(x / 400, z / 400);
                     
-                    if (Math.abs(caveNoise) < 0.1) {
+                    if (Math.abs(caveNoise) < 0.08) {
                         generated.push({
                             type: 'cave',
-                            name: 'Cave',
+                            name: 'Cave Entrance',
                             icon: '🕳️',
                             color: '#696969',
                             x: x,
@@ -548,26 +527,25 @@
             ctx.strokeStyle = '#1a2744';
             ctx.lineWidth = 1 / zoom;
             const gridSize = 100;
-            const startX = Math.floor((-offsetX - centerX / zoom) / gridSize) * gridSize;
-            const endX = Math.ceil((-offsetX + centerX / zoom) / gridSize) * gridSize;
-            const startZ = Math.floor((-offsetY - centerY / zoom) / gridSize) * gridSize;
-            const endZ = Math.ceil((-offsetY + centerY / zoom) / gridSize) * gridSize;
+            const visibleRange = Math.max(canvas.width, canvas.height) / zoom;
+            const startX = Math.floor((-offsetX - visibleRange) / gridSize) * gridSize;
+            const endX = Math.ceil((-offsetX + visibleRange) / gridSize) * gridSize;
+            const startZ = Math.floor((-offsetY - visibleRange) / gridSize) * gridSize;
+            const endZ = Math.ceil((-offsetY + visibleRange) / gridSize) * gridSize;
             
+            ctx.beginPath();
             for (let x = startX; x <= endX; x += gridSize) {
-                ctx.beginPath();
                 ctx.moveTo(x, startZ);
                 ctx.lineTo(x, endZ);
-                ctx.stroke();
             }
             for (let z = startZ; z <= endZ; z += gridSize) {
-                ctx.beginPath();
                 ctx.moveTo(startX, z);
                 ctx.lineTo(endX, z);
-                ctx.stroke();
             }
+            ctx.stroke();
             
             // Draw structures
-            const iconSize = Math.max(12, 20 / zoom);
+            const iconSize = Math.max(16, 24 / zoom);
             ctx.font = `${iconSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -575,8 +553,12 @@
             structures.forEach(struct => {
                 if (!visibleStructures.has(struct.type)) return;
                 
-                // Draw icon
-                ctx.fillText(struct.icon, struct.x, struct.z);
+                const screenX = struct.x;
+                const screenZ = struct.z;
+                
+                if (screenX < startX || screenX > endX || screenZ < startZ || screenZ > endZ) return;
+                
+                ctx.fillText(struct.icon, screenX, screenZ);
             });
             
             ctx.restore();
@@ -601,7 +583,7 @@
         }
 
         function findStructureAtPosition(worldX, worldZ) {
-            const threshold = 20 / zoom;
+            const threshold = 30 / zoom;
             let closest = null;
             let minDist = threshold;
             
@@ -644,7 +626,6 @@
 
         function onMouseUp(e) {
             if (!isDragging) {
-                // Click detected
                 const rect = canvas.getBoundingClientRect();
                 const screenX = e.clientX - rect.left;
                 const screenY = e.clientY - rect.top;
@@ -654,7 +635,7 @@
                 if (struct) {
                     const coords = `X: ${Math.floor(struct.x)}, Z: ${Math.floor(struct.z)}`;
                     navigator.clipboard.writeText(coords).then(() => {
-                        alert(`${struct.name}\n${coords}\n\n✓ Coordonnées copiées dans le presse-papier !`);
+                        alert(`${struct.name}\n${coords}\n\n✓ Coordinates copied to clipboard!`);
                     }).catch(() => {
                         alert(`${struct.name}\n${coords}`);
                     });
@@ -673,7 +654,7 @@
             const tooltip = document.getElementById('tooltip');
             
             if (struct) {
-                tooltip.textContent = `${struct.name}\nX: ${Math.floor(struct.x)}, Z: ${Math.floor(struct.z)}`;
+                tooltip.textContent = `${struct.name}\nX: ${Math.floor(struct.x)} | Z: ${Math.floor(struct.z)}`;
                 tooltip.style.left = (e.clientX + 15) + 'px';
                 tooltip.style.top = (e.clientY + 15) + 'px';
                 tooltip.style.display = 'block';
@@ -684,33 +665,33 @@
             }
         }
 
-        function onWheel(e) {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            zoom *= delta;
-            zoom = Math.max(0.1, Math.min(5, zoom));
-            render();
-        }
-
         function updateCoords(e) {
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left - canvas.width / 2) / zoom - offsetX;
             const z = (e.clientY - rect.top - canvas.height / 2) / zoom - offsetY;
-            document.getElementById('coordsDisplay').textContent = `X: ${Math.floor(x)}, Z: ${Math.floor(z)}`;
+            document.getElementById('coordsDisplay').textContent = `X: ${Math.floor(x)} | Z: ${Math.floor(z)}`;
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= delta;
+            zoom = Math.max(0.1, Math.min(3, zoom));
+            render();
         }
 
         function zoomIn() {
-            zoom *= 1.2;
+            zoom = Math.min(zoom * 1.2, 3);
             render();
         }
 
         function zoomOut() {
-            zoom /= 1.2;
+            zoom = Math.max(zoom / 1.2, 0.1);
             render();
         }
 
         function resetView() {
-            zoom = 1;
+            zoom = 0.5;
             offsetX = 0;
             offsetY = 0;
             render();
